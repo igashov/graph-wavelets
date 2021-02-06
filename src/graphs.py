@@ -1,7 +1,10 @@
+import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 
 from collections import Counter
 from pyvis.network import Network
+from sklearn.datasets import make_swiss_roll
 from typing import List, Optional
 
 PYVIS_WIDTH_PX = 800
@@ -152,3 +155,42 @@ class SPGraph(Graph):
             ]).astype(int)
             communities.append(comm_col)
         return np.array(communities).T
+
+
+class SuissRollGraph(Graph):
+    sample: np.ndarray
+
+    def __init__(self, n: int, noise: float, sigma: float):
+        Graph.__init__(self, n)
+        self.sample = make_swiss_roll(n, noise)[0]
+        self.sigma = sigma
+        self.A = self.__generate_adj_matrix()
+        self.L = Graph._compute_laplacian(self.A)
+        self.laplacian_eigenvalues, _ = np.linalg.eig(self.L)
+
+    def plot(self, communities=None) -> None:
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
+        ax.view_init(7, -80)
+        if communities is None:
+            ax.scatter(self.sample[:, 0], self.sample[:, 1], self.sample[:, 2], s=20, edgecolor='k')
+        else:
+            labels = np.unique(communities)
+            for l in labels:
+                ax.scatter(
+                    self.sample[communities == l, 0],
+                    self.sample[communities == l, 1],
+                    self.sample[communities == l, 2],
+                    color=plt.cm.jet(float(l) / np.max(labels + 1)),
+                    s=20,
+                    edgecolor='k')
+        plt.show()
+
+    def __generate_adj_matrix(self) -> np.ndarray:
+        return np.array([
+            [
+                np.exp(-np.linalg.norm(xi - xj) ** 2 / (2 * self.sigma))
+                for xj in self.sample
+            ]
+            for xi in self.sample
+        ])

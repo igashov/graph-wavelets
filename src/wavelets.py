@@ -67,7 +67,7 @@ def get_scale2cheb_coeffs(
     return scales, scale2cheb_coeffs
 
 
-def compute_chebyshev_polynomial(f: np.ndarray, laplacian: np.ndarray, s2c: List, approx: List):
+def compute_chebyshev_polynomial(f: np.ndarray, laplacian: np.ndarray, s2c: List, approx: List) -> List:
     n_scales = len(s2c)
     m = [
         len(s2c[scale])
