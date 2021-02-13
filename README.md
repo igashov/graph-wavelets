@@ -6,7 +6,7 @@ Python implementation of the method proposed in the [paper](https://ieeexplore.i
 
 ### Structure
 
-* Final report is [here](./report.pdf)
+* Final report: `./report.pdf`
 * All the necessary code is provided in the directory `./src`
 * Examples of the method application are provided in jupyter-notebooks:
     - experiment on a small Sales-Pardo graph with visualization: `example_sp_graph_toy.ipynb`
