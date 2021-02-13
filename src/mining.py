@@ -52,7 +52,7 @@ def cut_dendrogram(z: np.ndarray) -> np.ndarray:
     return partition
 
 
-def compute_communities(graph: Graph, scales_num: int, r_num: int) -> (List, np.ndarray):
+def compute_linkage(graph: Graph, scales_num: int, r_num: int) -> (List, np.ndarray):
     l1, l2, l3 = sorted(graph.laplacian_eigenvalues)[:3]
     lmax = np.max(graph.laplacian_eigenvalues)
     approximation_interval = [0, lmax]
@@ -60,8 +60,15 @@ def compute_communities(graph: Graph, scales_num: int, r_num: int) -> (List, np.
     scales, s2c = get_scale2cheb_coeffs(scales_num, l2, l3, lmax, approximation_interval)
     signal = np.random.random((graph.N, r_num))
     scale2signal_fwt = compute_chebyshev_polynomial(signal, graph.L, s2c, approximation_interval)
-    zg = np.array([
-        cut_dendrogram(linkage(signal_fwt, 'average', 'correlation'))
+    scale2linkage = np.array([
+        linkage(signal_fwt, 'average', 'correlation')
         for signal_fwt in scale2signal_fwt
+    ])
+    return scales, scale2linkage
+
+
+def compute_communities(linkage):
+    return np.array([
+        cut_dendrogram(l)
+        for l in linkage
     ]).T
-    return scales, zg

@@ -4,7 +4,6 @@ import numpy as np
 
 from collections import Counter
 from pyvis.network import Network
-from sklearn.datasets import make_swiss_roll
 from typing import List, Optional
 
 PYVIS_WIDTH_PX = 800
@@ -159,32 +158,40 @@ class SPGraph(Graph):
 
 class SuissRollGraph(Graph):
     sample: np.ndarray
+    clusters: np.ndarray
 
-    def __init__(self, n: int, noise: float, sigma: float):
+    def __init__(self, n: int, n_clusters: int, sigma: float):
         Graph.__init__(self, n)
-        self.sample = make_swiss_roll(n, noise)[0]
+        self.sample, self.clusters = self.__make_suiss_roll(n, n_clusters)
         self.sigma = sigma
         self.A = self.__generate_adj_matrix()
         self.L = Graph._compute_laplacian(self.A)
         self.laplacian_eigenvalues, _ = np.linalg.eig(self.L)
 
-    def plot(self, communities=None) -> None:
-        fig = plt.figure()
-        ax = p3.Axes3D(fig)
+    def plot(self, communities=None, ax=None) -> None:
+        if ax is None:
+            fig = plt.figure()
+            ax = p3.Axes3D(fig)
         ax.view_init(7, -80)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax._axis3don = False
+        ax.grid(False)
         if communities is None:
-            ax.scatter(self.sample[:, 0], self.sample[:, 1], self.sample[:, 2], s=20, edgecolor='k')
-        else:
-            labels = np.unique(communities)
-            for l in labels:
-                ax.scatter(
-                    self.sample[communities == l, 0],
-                    self.sample[communities == l, 1],
-                    self.sample[communities == l, 2],
-                    color=plt.cm.jet(float(l) / np.max(labels + 1)),
-                    s=20,
-                    edgecolor='k')
-        plt.show()
+            communities = self.clusters
+
+        labels = np.unique(communities)
+        for l in labels:
+            ax.scatter(
+                self.sample[communities == l, 0],
+                self.sample[communities == l, 1],
+                self.sample[communities == l, 2],
+                color=plt.cm.jet(float(l) / np.max(labels + 1)),
+                alpha=0.5)
 
     def __generate_adj_matrix(self) -> np.ndarray:
         return np.array([
@@ -194,3 +201,28 @@ class SuissRollGraph(Graph):
             ]
             for xi in self.sample
         ])
+
+    @staticmethod
+    def __make_suiss_roll(n, n_clusters):
+        phi_min = 1.5 * np.pi
+        phi_max = 4.5 * np.pi
+        cluster_size = (phi_max - phi_min) / n_clusters
+        means = [phi_min + i * cluster_size + cluster_size / 2 for i in range(n_clusters)]
+        var = cluster_size / 4
+
+        X = []
+        y = []
+        for i in range(500):
+            cluster = np.random.randint(0, n_clusters)
+            phi = np.random.normal(loc=means[cluster], scale=var)
+            psi = np.random.uniform(1, 10)
+            X.append([
+                phi * np.cos(phi),
+                psi,
+                phi * np.sin(phi),
+            ])
+            y.append(cluster)
+
+        X = np.array(X)
+        y = np.array(y)
+        return X, y
